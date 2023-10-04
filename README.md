@@ -16,7 +16,7 @@ To get started with ProtocolJS, follow these simple steps:
 
 1. **Installation**: Clone this repository to your local machine.
 
-2. **Documentation**: Explore our comprehensive documentation, which provides detailed insights into using ProtocolJS effectively. Find documentation [here](link_to_documentation).
+2. **Documentation**: Explore the documentation, which provides detailed insights into using ProtocolJS effectively. Find documentation [here](link_to_documentation).
 
 3. **Examples**: Dive into our well-structured examples to see ProtocolJS in action. Gain a better understanding of how to leverage the framework for your own protocol development needs.
 
