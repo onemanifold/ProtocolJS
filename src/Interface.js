@@ -1,69 +1,102 @@
-import { FunctionType } from "../src/Type.js"
+import { Protocol } from "./Protocol.js";
+import { Model } from "./Model.js";
+
 /**
- * 
+ * The Interface class enforces a specific Protocol on a Model. This class ensures that interactions
+ * between different components adhere to the defined protocol, managing phase transitions and validating
+ * messages based on the protocol's rules. It acts as a mediator between the Model and its external interactions,
+ * ensuring that the Model's state changes follow the prescribed sequence of phases and events in the Protocol.
  */
-class Interface {
-    protocol
+export class Interface {
+    // Private fields for storing instances of Protocol, Model, and current phase name
+    #protocol;
+    #model;
+    #currentPhaseName;
+
     /**
+     * Constructs an Interface instance, initializing the protocol, model, and current phase.
+     * This constructor validates that the provided protocol and model are appropriate instances
+     * and throws an error if they are not. It also sets up the interface methods based on the
+     * events defined in the protocol.
      * 
-     * @param {*} protocol  
+     * @param {Protocol} protocol - The Protocol instance to be enforced.
+     * @param {Model} model - The Model instance that will interact through this interface.
+     * @throws {Error} - Throws an error if either the protocol or model is not of the expected instance type.
      */
-    constructor(protocol) {
-        if (protocol) this.protocol = protocol
-    }
-    static protocol = Symbol('protocol')
-}
+    constructor(protocol, model) {
+        if (!(protocol instanceof Protocol)) throw new Error("Interface: Invalid protocol instance");
+        if (!(model instanceof Model)) throw new Error("Interface: Invalid model instance");
 
-Object.freeze(Interface)
-Object.freeze(Interface.prototype)
-
-/**
- * TODO: Make this the interface of the object protocol
- * Create a new inboundInterface for the Object protocol
- */
-export class InboundInterface extends Interface {
-    apply
-    constructor(protocol, object) {
-        super(protocol)
-        protocol.verify(object)
-        this.apply = (name, args = []) => {
-            const type = protocol.propertyTypes[name]          // retrieve the property type with that property name
-            if ( type instanceof FunctionType )                // if the property type is a method type, pass the object, the property name
-                return type.apply(object[name], object, args)  // Applying arguments to method in a type verified way
-            else if  ( args.length === 0 )                     // If there are no arguments
-                return object[name]                            // It is a property get call
-            else throw (`Invalid protocol message: ${name}`)   // otherwise, it is a protocol violation and it must throw
-        }
-        Object.freeze(this)
+        this.#protocol = protocol.verify();
+        this.#model = model.start(protocol);
+        this.#currentPhaseName = protocol.startPhaseName;
+        this.#buildInterface();
+        Object.freeze(this);
     }
-}
-Object.freeze(InboundInterface)
-Object.freeze(InboundInterface.prototype)
-/**
- * 
- */
-export class OutboundInterface extends Interface {
-    constructor(protocol, apply) {
-        super(protocol)
-        const propertyDescriptors = {}
-        const { propertyTypes } = protocol
-        for ( let name in propertyTypes )
-        {
-            let type = propertyTypes[name]
-            let descriptor = {
-                enumerable:true // Make property reflective
+
+    /**
+     * Provides access to the current protocol instance.
+     * 
+     * @returns {Protocol} - The currently enforced protocol.
+     */
+    get protocol() {
+        return this.#protocol;
+    }
+
+    /**
+     * Private method for dynamically creating interface methods based on the events defined in the protocol.
+     * Each method created delegates to the corresponding method in the model and handles phase transitions
+     * according to the protocol's definition.
+     *
+     * @private
+     * @throws {Error} - Throws an error if the model does not implement a method required by the protocol.
+     */
+    #buildInterface() {
+        for (let eventName of Object.keys(this.#protocol.events)) {
+            if (!this.#model[eventName] || typeof this.#model[eventName] !== 'function') {
+                throw new Error(`Model does not implement the protocol message: ${eventName}`);
+            } else {
+                this[eventName] = async (...args) => await this.#transition(eventName, ...args);
             }
-            if ( type instanceof FunctionType )
-                descriptor.value = (...args) => apply(name, args) // Non configurable and writable by default 
-            else
-                descriptor.get = () => apply(name) // property values in interfaces are read only, changing them requires invoking explicit methods   
-            propertyDescriptors[name] = descriptor
         }
-        Object.defineProperties(this, propertyDescriptors)
-        Object.freeze(this)  // We freeze to make it non extensible so it follows the interface contract (the interface)
+    }
+
+    /**
+     * Private method to check if the interface's current phase matches a given phase.
+     * 
+     * @private
+     * @param {string} phaseName - The phase name to check against the current phase.
+     * @returns {boolean} - Returns true if the current phase matches the given name; otherwise, false.
+     */
+    #is(phaseName) {
+        return this.#currentPhaseName === phaseName;
+    }
+
+    /**
+     * Handles the transition to the next phase based on the current event. It checks if the transition
+     * is valid per the protocol and, if so, performs the transition by updating the current phase.
+     * This method also calls the corresponding event handler in the model with provided arguments.
+     *
+     * @private
+     * @param {string} eventName - The name of the event triggering the transition.
+     * @param {Array} args - Arguments to be passed to the model's event handler.
+     * @returns {Promise<boolean>} - Returns true if the transition was successful; otherwise, false.
+     * @throws {Error} - Throws an error if the transition is not allowed in the current phase.
+     */
+    async #transition(eventName, args = []) {
+        if (this.#protocol.can(this.#currentPhaseName, eventName, args)) {
+            try {
+                await this.#model[eventName](...args);
+            } catch (e) {
+                console.error(e);
+                return false;
+            }
+            const currentPhase = this.#protocol.phases[this.#currentPhaseName];
+            const nextPhase = currentPhase.transitions[eventName];
+            this.#currentPhaseName = nextPhase;
+            return true;
+        } else {
+            throw new Error(`Transition "${eventName}" not allowed in phase "${this.#currentPhaseName}".`);
+        }
     }
 }
-Object.freeze(OutboundInterface)
-Object.freeze(OutboundInterface.prototype)
-
-export { Interface }

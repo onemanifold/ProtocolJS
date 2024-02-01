@@ -1,0 +1,62 @@
+<html>
+<title>Virtual Network REPL</title>
+<style>
+	* {
+		margin: 0;
+		padding: 0;
+		background-color: black;
+	}
+</style>
+
+<head>
+	<link rel="stylesheet" href="node_modules/xterm/css/xterm.css" />
+	<script src="node_modules/xterm/lib/xterm.js"></script>
+	<script src="node_modules/xterm-addon-fit/lib/xterm-addon-fit.js" type="module"></script>
+</head>
+
+<body>
+	<div id="terminalDiv" style="height:100%; width: 100%; border: 3px;"></div>
+	<script type="module">
+		
+		// Initializing terminal
+		var term = new Terminal({
+			convertEol: true,
+			fontFamily: `'Liberation Mono', 'Fira Mono', monospace`,
+			fontSize: 17,
+			rendererType: 'dom', // default is canvas
+		});
+		const fitAddon = new FitAddon.FitAddon();
+		term.loadAddon(fitAddon);
+		// Displaying terminal
+		term.open(terminalDiv);
+		fitAddon.fit();
+		window.onresize = () => fitAddon.fit()
+        const connect = () => {
+            var ws = new WebSocket(`ws://${window.location.host}`)
+            ws.onopen = ()=> {
+                // Responding to the on message event
+                ws.onmessage = async event => {
+                    term.write(await event.data.text())
+                }
+                ws.onclose = async event => {
+                    if (event.wasClean) {
+                        term.write(`Connection closed, code=${event.code}, reason=${event.reason}\n`)
+                    } else {
+                        //term.write('Connection abruptly closed... reconnecting in 5 seconds\n')
+                        //setTimeout(connect, 5000)
+                    }
+                }
+                ws.onerror = () => {
+                    //term.write('Connection failed... retrying in 5 seconds\n')
+                    //setTimeout(connect, 5000)
+                }
+                term.onData((data) => ws.send(data))
+            }
+        }
+       
+        connect()
+
+	</script>
+</body>
+
+</html>
