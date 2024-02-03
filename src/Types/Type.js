@@ -58,22 +58,6 @@ export class Type {
     }
 
     /**
-     * Validates and returns a Type instance.
-     * Throws an error if the provided argument is not a Type instance.
-     * 
-     * @param {Type} type - The Type instance to be validated.
-     * @returns {Type} - The validated Type instance.
-     * @throws {Error} - Throws an error if the argument is not a Type instance.
-     */
-    #getType(type) {
-        if (!(type instanceof Type)) {
-            throw new Error(`"${type.toString()}" is not a type`);
-        } else {
-            return type;
-        }
-    }
-
-    /**
      * Converts the Type instance to a string representation.
      * 
      * @returns {string} - A string representation of the Type instance.
@@ -103,6 +87,22 @@ export class Type {
             this[key] = values[i];
         }
     }
+    
+    /**
+    * Validates and returns a Type instance.
+    * Throws an error if the provided argument is not a Type instance.
+    * 
+    * @param {Type} type - The Type instance to be validated.
+    * @returns {Type} - The validated Type instance.
+    * @throws {Error} - Throws an error if the argument is not a Type instance.
+    */
+   static getType(type) {
+       if (!(type instanceof Type)) {
+           throw new Error(`"${type.toString()}" is not a type`);
+       } else {
+           return type;
+       }
+   }
 }
 
 // Freezes the Type class to prevent modification

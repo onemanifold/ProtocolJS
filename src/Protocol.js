@@ -25,7 +25,6 @@ export class Protocol {
      * 
      * @param {Object} config - Configuration object for the protocol.
      * @param {string} config.name - The name of the protocol.
-     * @param {Type} config.type - The type of the protocol.
      * @param {Object} config.messagesTypes - Mapping of message names to their types.
      * @param {Object} config.transitions - Phase transitions defined as a map of message names to next phase names.
      * @param {string} config.starts - The name of the starting phase.
@@ -33,14 +32,13 @@ export class Protocol {
      */
     constructor({
         name,
-        type,
-        messagesTypes = {}, //from messageTypes TODO: Update all references from messages, to messages. And articulate a reciprocal protocol definition (that comes from the same declarative definition), i.e. reciprocal of send is receive, and receive is send.         transitions:phaseTransitions = {},
+        messagesTypes = {},
+        transitions:phaseTransitions = {},
         starts:startPhaseName,
         ends:endPhaseName,
     }) {
 
         this.name = name
-        this.type = type
         this.startPhaseName = startPhaseName
         this.endPhaseName = endPhaseName
 
@@ -75,10 +73,11 @@ export class Protocol {
      * @param {string} phaseName - The name of the phase to be set.
      */
     setPhase(phaseName) {
-            this.phases[phaseName] = {
-                name:phaseName, 
-                transitions:{}, 
-            }
+        if ( this.phases[phaseName] ) return
+        this.phases[phaseName] = {
+            name:phaseName, 
+            transitions:{}, 
+        }
     }
 
     /**
@@ -185,7 +184,6 @@ export class Protocol {
      * @throws {Error} Throws an error if the protocol is invalid.
      */ 
     verify() {
-        if ( !this.type instanceof Type ) throw("Invalid protocol type provided")
 
         const endPhase = this.phases[this.endPhaseName]
         const startPhase = this.phases[this.startPhaseName]

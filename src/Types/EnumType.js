@@ -14,11 +14,11 @@ export class EnumType extends Type {
      */
     constructor(type, options) {
         super(); // Initialize the base Type with the name of the type
-        this.type = type;
+        this.type = Type.getType(type);
         this.options = [];
         options.forEach(option => {
             this.type.verify(option); // Verify each option against the base type
-            this.options.push(option); // Fixed: push option into options array
+            this.options.push(option); // push option into options array
         });
     }
 

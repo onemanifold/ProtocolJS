@@ -13,7 +13,7 @@ export class MaybeType extends Type {
      */
     constructor(type) {
         super();
-        this.type = this.getType(type); // Ensures the specified type is a valid Type instance.
+        this.type = Type.getType(type); // Ensures the specified type is a valid Type instance.
     }
 
     /**

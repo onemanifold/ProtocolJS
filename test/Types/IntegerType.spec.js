@@ -46,4 +46,79 @@ describe("IntegerType with BitStream", () => {
       expect(() => encodeAndDecode(256, 8, false)).toThrow(); // Should throw for unsigned 8-bit value
       expect(() => encodeAndDecode(128, 8, true)).toThrow(); // Should throw for signed 8-bit value
     });
+});
+
+describe('IntegerType', () => {
+  let intTypeUnsigned;
+  let intTypeSigned;
+  let stream;
+
+  beforeEach(() => {
+    // Create instances for testing both signed and unsigned integers with a specific number of bits
+    intTypeUnsigned = new IntegerType(8, false); // Example: 8-bit unsigned integer
+    intTypeSigned = new IntegerType(8, true); // Example: 8-bit signed integer
+    stream = new BitStream(new Uint8Array(10));
   });
+
+  describe('Verification', () => {
+    it('should verify valid unsigned integer', () => {
+      expect(() => intTypeUnsigned.verify(255)).not.toThrow();
+    });
+
+    it('should throw error for unsigned integer out of range', () => {
+      expect(() => intTypeUnsigned.verify(256)).toThrow();
+      expect(() => intTypeUnsigned.verify(-1)).toThrow();
+    });
+
+    it('should verify valid signed integer', () => {
+      expect(() => intTypeSigned.verify(127)).not.toThrow();
+      expect(() => intTypeSigned.verify(-128)).not.toThrow();
+    });
+
+    it('should throw error for signed integer out of range', () => {
+      expect(() => intTypeSigned.verify(128)).toThrow();
+      expect(() => intTypeSigned.verify(-129)).toThrow();
+    });
+
+    it('should throw error for non-integer values', () => {
+      expect(() => intTypeUnsigned.verify(3.14)).toThrow();
+      expect(() => intTypeSigned.verify("100")).toThrow();
+    });
+  });
+
+  describe('Encoding and Decoding', () => {
+    it('should encode and decode unsigned integer correctly', () => {
+      const value = 255; // Max value for 8-bit unsigned
+      intTypeUnsigned.encode(value, stream.write.bind(stream));
+      stream.moveTo(0);
+      const decoded = intTypeUnsigned.decode(stream.read.bind(stream));
+      expect(decoded).toBe(value);
+    });
+
+    it('should encode and decode signed integer correctly', () => {
+      const positiveValue = 127; // Max positive value for 8-bit signed
+      const negativeValue = -128; // Min value for 8-bit signed
+      intTypeSigned.encode(positiveValue, stream.write.bind(stream));
+      stream.moveTo(0);
+      let decoded = intTypeSigned.decode(stream.read.bind(stream));
+      expect(decoded).toBe(positiveValue);
+
+      stream = new BitStream(new Uint8Array(10)); // Reset stream for next test
+      intTypeSigned.encode(negativeValue, stream.write.bind(stream));
+      stream.moveTo(0);
+      decoded = intTypeSigned.decode(stream.read.bind(stream));
+      expect(decoded).toBe(negativeValue);
+    });
+
+    it('should handle sign bit correctly for signed integers', () => {
+      intTypeSigned.encode(-1, stream.write.bind(stream));
+      stream.moveTo(0);
+      const decoded = intTypeSigned.decode(stream.read.bind(stream));
+      expect(decoded).toBe(-1);
+    });
+  });
+
+  // Add more tests here for edge cases, such as very small or very large numbers,
+  // and special cases like encoding/decoding the maximum and minimum possible values.
+});
+

@@ -14,7 +14,7 @@ export class ArrayType extends Type {
     constructor(itemType, maxLength = 65536) {
         super("object");
         this.maxLength = maxLength;
-        if (itemType) this.itemType = itemType;
+        if (itemType) this.itemType = Type.getType(itemType);
     }
 
     /**

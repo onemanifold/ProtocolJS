@@ -1,15 +1,17 @@
 import { Protocol } from "../src/Protocol.js"
+import { StringType } from "../src/Types/StringType.js"
+
 
 describe("Protocol", () => {
+    let string = new StringType()
     let protocol;
 
     beforeEach(() => {
         protocol = new Protocol({
             name: "Test Protocol",
-            type: "Test Type",
             messagesTypes: {
-                message1: "Type1",
-                message2: "Type2",
+                message1: string,
+                message2: string,
             },
             transitions: {
                 phase1: "phase2",
